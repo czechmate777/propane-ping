@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Measure your propane tank level by tapping it and analyzing the sound frequency. Works offline as an installable PWA.">
+  <meta name="theme-color" content="#f59e0b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Propane Ping</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ───────── HEADER ───────── -->
+  <header id="app-header">
+    <div class="header-inner">
+      <div class="logo-group">
+        <svg class="logo-icon" viewBox="0 0 40 56" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect x="12" y="2" width="16" height="6" rx="2" stroke="currentColor" stroke-width="2.5"/>
+          <path d="M8 14a6 6 0 0 1 6-6h12a6 6 0 0 1 6 6v32a8 8 0 0 1-8 8H16a8 8 0 0 1-8-8V14Z"
+                stroke="currentColor" stroke-width="2.5"/>
+          <rect x="16" y="50" width="3" height="5" rx="1" fill="currentColor"/>
+          <rect x="21" y="50" width="3" height="5" rx="1" fill="currentColor"/>
+        </svg>
+        <h1>Propane Ping</h1>
+      </div>
+      <button id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="app-main">
+
+    <!-- ───────── HOME SCREEN ───────── -->
+    <section id="screen-home" class="screen active">
+      <div class="tank-hero" aria-hidden="true">
+        <svg id="hero-tank" viewBox="0 0 120 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Valve -->
+          <rect x="42" y="4" width="36" height="16" rx="5" stroke="currentColor" stroke-width="3"/>
+          <!-- Body -->
+          <path d="M20 40a18 18 0 0 1 18-18h44a18 18 0 0 1 18 18v100a22 22 0 0 1-22 22H42a22 22 0 0 1-22-22V40Z"
+                stroke="currentColor" stroke-width="3" class="tank-body"/>
+          <!-- Fill -->
+          <clipPath id="tank-clip">
+            <path d="M22 40a16 16 0 0 1 16-16h44a16 16 0 0 1 16 16v100a20 20 0 0 1-20 20H42a20 20 0 0 1-20-20V40Z"/>
+          </clipPath>
+          <rect id="tank-fill-hero" x="20" y="24" width="80" height="140" clip-path="url(#tank-clip)"
+                class="tank-fill" style="transform: translateY(60%)"/>
+          <!-- Legs -->
+          <rect x="38" y="158" width="8" height="16" rx="3" fill="currentColor"/>
+          <rect x="74" y="158" width="8" height="16" rx="3" fill="currentColor"/>
+          <!-- Gauge lines -->
+          <line x1="16" y1="55" x2="24" y2="55" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+          <line x1="16" y1="85" x2="24" y2="85" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+          <line x1="16" y1="115" x2="24" y2="115" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+          <line x1="16" y1="145" x2="24" y2="145" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+        </svg>
+      </div>
+      <p class="tagline">Tap your tank. Hear the level.</p>
+      <button id="btn-take-reading" class="btn-primary" aria-label="Take a reading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+        Take Reading
+      </button>
+      <button id="btn-show-history" class="btn-secondary" aria-label="View reading history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        History
+      </button>
+      <p class="disclaimer">Results are estimates. Accuracy varies by tank size and material.</p>
+    </section>
+
+    <!-- ───────── RECORDING SCREEN ───────── -->
+    <section id="screen-recording" class="screen">
+      <div class="recording-visual">
+        <div class="mic-pulse" aria-hidden="true">
+          <div class="pulse-ring"></div>
+          <div class="pulse-ring delay-1"></div>
+          <div class="pulse-ring delay-2"></div>
+          <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+        </div>
+        <p class="recording-label">Listening…</p>
+        <p class="recording-hint">Tap the side of your tank now</p>
+      </div>
+      <div class="progress-container">
+        <div id="progress-bar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-fill"></div>
+        </div>
+        <span id="progress-text" class="progress-text">0%</span>
+      </div>
+      <button id="btn-cancel-recording" class="btn-secondary btn-sm" aria-label="Cancel recording">Cancel</button>
+    </section>
+
+    <!-- ───────── RESULT SCREEN ───────── -->
+    <section id="screen-result" class="screen">
+      <div class="result-card">
+        <div class="result-tank-wrap">
+          <svg id="result-tank" viewBox="0 0 120 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="42" y="4" width="36" height="16" rx="5" stroke="currentColor" stroke-width="3"/>
+            <path d="M20 40a18 18 0 0 1 18-18h44a18 18 0 0 1 18 18v100a22 22 0 0 1-22 22H42a22 22 0 0 1-22-22V40Z"
+                  stroke="currentColor" stroke-width="3"/>
+            <clipPath id="result-clip">
+              <path d="M22 40a16 16 0 0 1 16-16h44a16 16 0 0 1 16 16v100a20 20 0 0 1-20 20H42a20 20 0 0 1-20-20V40Z"/>
+            </clipPath>
+            <rect id="result-tank-fill" x="20" y="24" width="80" height="140" clip-path="url(#result-clip)"
+                  class="tank-fill" style="transform: translateY(100%)"/>
+            <rect x="38" y="158" width="8" height="16" rx="3" fill="currentColor"/>
+            <rect x="74" y="158" width="8" height="16" rx="3" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="result-info">
+          <span id="result-percent" class="result-percent">—</span>
+          <span id="result-label" class="result-label"></span>
+          <span id="result-freq" class="result-freq"></span>
+        </div>
+      </div>
+      <div class="note-section">
+        <label for="note-input" class="note-label">Add a Note</label>
+        <input id="note-input" type="text" class="note-input" placeholder='e.g. "Trailer Tank"' maxlength="80" autocomplete="off">
+      </div>
+      <div class="result-actions">
+        <button id="btn-save-result" class="btn-primary">Save Reading</button>
+        <button id="btn-discard-result" class="btn-secondary btn-sm">Discard</button>
+      </div>
+    </section>
+
+    <!-- ───────── HISTORY SCREEN ───────── -->
+    <section id="screen-history" class="screen">
+      <div class="history-header">
+        <h2>Reading History</h2>
+        <button id="btn-clear-history" class="btn-danger btn-sm" aria-label="Clear all history">Clear All</button>
+      </div>
+      <div id="history-list" class="history-list">
+        <!-- Cards inserted by JS -->
+      </div>
+      <p id="history-empty" class="history-empty">No readings yet. Tap a tank to get started!</p>
+      <button id="btn-back-home" class="btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+        </svg>
+        Back
+      </button>
+    </section>
+  </main>
+
+  <!-- Confirm dialog -->
+  <div id="confirm-overlay" class="confirm-overlay hidden" role="dialog" aria-modal="true">
+    <div class="confirm-box">
+      <p id="confirm-message">Are you sure?</p>
+      <div class="confirm-actions">
+        <button id="confirm-yes" class="btn-danger btn-sm">Yes, clear</button>
+        <button id="confirm-no" class="btn-secondary btn-sm">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
