@@ -315,8 +315,10 @@
             <clipPath id="hist-clip-${r.id}">
               <path d="M22 40a16 16 0 0 1 16-16h44a16 16 0 0 1 16 16v100a20 20 0 0 1-20 20H42a20 20 0 0 1-20-20V40Z"/>
             </clipPath>
-            <rect x="20" y="24" width="80" height="140" clip-path="url(#hist-clip-${r.id})"
-                  class="tank-fill" style="transform: translateY(${fillOffset}%)"/>
+            <g clip-path="url(#hist-clip-${r.id})">
+              <rect x="20" y="24" width="80" height="140"
+                    class="tank-fill" style="transform: translateY(${fillOffset}%)"/>
+            </g>
             <rect x="38" y="158" width="8" height="16" rx="3" fill="currentColor"/>
             <rect x="74" y="158" width="8" height="16" rx="3" fill="currentColor"/>
           </svg>
