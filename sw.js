@@ -1,4 +1,4 @@
-const CACHE_NAME = 'propane-ping-v1';
+const CACHE_NAME = 'propane-ping-v2';
 const ASSETS = [
   '/',
   '/index.html',
@@ -27,9 +27,18 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// Fetch — cache-first, fall back to network
+// Fetch — network-first, fall back to cache
 self.addEventListener('fetch', (e) => {
   e.respondWith(
-    caches.match(e.request).then((cached) => cached || fetch(e.request))
+    fetch(e.request)
+      .then((response) => {
+        // Update cache with the latest version
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(e.request, responseClone);
+        });
+        return response;
+      })
+      .catch(() => caches.match(e.request))
   );
 });

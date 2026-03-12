@@ -8,35 +8,42 @@
   // ── DOM refs ──
   const $ = (sel) => document.querySelector(sel);
   const screens = {
-    home:      $('#screen-home'),
+    home: $('#screen-home'),
     recording: $('#screen-recording'),
-    result:    $('#screen-result'),
-    history:   $('#screen-history'),
+    result: $('#screen-result'),
+    history: $('#screen-history'),
+    debug: $('#screen-debug'),
   };
 
   const els = {
-    themeToggle:       $('#theme-toggle'),
-    btnTakeReading:    $('#btn-take-reading'),
-    btnShowHistory:    $('#btn-show-history'),
-    btnCancelRecording:$('#btn-cancel-recording'),
-    progressFill:      $('.progress-fill'),
-    progressText:      $('#progress-text'),
-    resultPercent:     $('#result-percent'),
-    resultLabel:       $('#result-label'),
-    resultFreq:        $('#result-freq'),
-    resultTankFill:    $('#result-tank-fill'),
-    heroTankFill:      $('#tank-fill-hero'),
-    noteInput:         $('#note-input'),
-    btnSaveResult:     $('#btn-save-result'),
-    btnDiscardResult:  $('#btn-discard-result'),
-    historyList:       $('#history-list'),
-    historyEmpty:      $('#history-empty'),
-    btnClearHistory:   $('#btn-clear-history'),
-    btnBackHome:       $('#btn-back-home'),
-    confirmOverlay:    $('#confirm-overlay'),
-    confirmMessage:    $('#confirm-message'),
-    confirmYes:        $('#confirm-yes'),
-    confirmNo:         $('#confirm-no'),
+    themeToggle: $('#theme-toggle'),
+    btnTakeReading: $('#btn-take-reading'),
+    btnShowHistory: $('#btn-show-history'),
+    btnCancelRecording: $('#btn-cancel-recording'),
+    recordingLabel: $('.recording-label'),
+    recordingHint: $('.recording-hint'),
+    progressFill: $('.progress-fill'),
+    progressText: $('#progress-text'),
+    resultPercent: $('#result-percent'),
+    resultLabel: $('#result-label'),
+    resultFreq: $('#result-freq'),
+    resultTankFill: $('#result-tank-fill'),
+    heroTankFill: $('#tank-fill-hero'),
+    noteInput: $('#note-input'),
+    btnSaveResult: $('#btn-save-result'),
+    btnDiscardResult: $('#btn-discard-result'),
+    historyList: $('#history-list'),
+    historyEmpty: $('#history-empty'),
+    btnClearHistory: $('#btn-clear-history'),
+    btnBackHome: $('#btn-back-home'),
+    confirmOverlay: $('#confirm-overlay'),
+    confirmMessage: $('#confirm-message'),
+    confirmYes: $('#confirm-yes'),
+    confirmNo: $('#confirm-no'),
+    btnDebugMode: $('#btn-debug-mode'),
+    debugFreq: $('#debug-freq'),
+    debugNote: $('#debug-note'),
+    btnStopDebug: $('#btn-stop-debug'),
   };
 
   // ══════════════════════════════════════════════════
@@ -87,11 +94,8 @@
   // Reference frequency table (Hz → level %)
   // Lower frequency = more liquid = fuller tank
   const REF_POINTS = [
-    { hz: 200, level: 100 },
-    { hz: 350, level: 75 },
-    { hz: 500, level: 50 },
-    { hz: 650, level: 25 },
-    { hz: 800, level: 0 },
+    { hz: 1020, level: 100 },
+    { hz: 1245, level: 0 },
   ];
 
   function hzToLevel(hz) {
@@ -143,32 +147,55 @@
     recordingActive = true;
     showScreen('recording');
 
-    const DURATION_MS = 3000;
-    const SAMPLE_INTERVAL = 100;
-    const samples = [];
-    let elapsed = 0;
+    els.recordingLabel.textContent = 'Get ready...';
+    els.recordingHint.textContent = 'Starting in 3';
+    
+    // Reset progress to 0 initially
+    els.progressFill.style.width = '0%';
+    els.progressText.textContent = '0%';
 
+    let countdown = 3;
     recordingTimer = setInterval(() => {
       if (!recordingActive) return;
-      elapsed += SAMPLE_INTERVAL;
+      countdown--;
+      
+      if (countdown > 0) {
+        els.recordingHint.textContent = `Starting in ${countdown}`;
+      } else {
+        clearInterval(recordingTimer);
+        
+        // Start actual sampling
+        els.recordingLabel.textContent = 'Listening…';
+        els.recordingHint.textContent = 'Tap the side of your tank now';
+        
+        const DURATION_MS = 3000;
+        const SAMPLE_INTERVAL = 100;
+        const samples = [];
+        let elapsed = 0;
 
-      // Update progress
-      const pct = Math.min(100, Math.round((elapsed / DURATION_MS) * 100));
-      els.progressFill.style.width = pct + '%';
-      els.progressText.textContent = pct + '%';
+        recordingTimer = setInterval(() => {
+          if (!recordingActive) return;
+          elapsed += SAMPLE_INTERVAL;
 
-      // Sample dominant frequency
-      const freq = getDominantFrequency();
-      if (freq > 0) samples.push(freq);
+          // Update progress
+          const pct = Math.min(100, Math.round((elapsed / DURATION_MS) * 100));
+          els.progressFill.style.width = pct + '%';
+          els.progressText.textContent = pct + '%';
 
-      if (elapsed >= DURATION_MS) {
-        stopRecording();
-        const avgHz = samples.length
-          ? Math.round(samples.reduce((a, b) => a + b, 0) / samples.length)
-          : 0;
-        showResult(avgHz);
+          // Sample dominant frequency
+          const freq = getDominantFrequency();
+          if (freq > 0) samples.push(freq);
+
+          if (elapsed >= DURATION_MS) {
+            stopRecording();
+            const avgHz = samples.length
+              ? Math.round(samples.reduce((a, b) => a + b, 0) / samples.length)
+              : 0;
+            showResult(avgHz);
+          }
+        }, SAMPLE_INTERVAL);
       }
-    }, SAMPLE_INTERVAL);
+    }, 1000);
   }
 
   function getDominantFrequency() {
@@ -191,6 +218,98 @@
     return (maxIdx / bufLen) * nyquist;
   }
 
+  // ══════════════════════════════════════════════════
+  //  DEBUG MODE (Continuous Sampling)
+  // ══════════════════════════════════════════════════
+  let debugTimer = null;
+  const NOTE_STRINGS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+  function getNoteFromFreq(freq) {
+    if (freq === 0) return "--";
+    // A4 = 440Hz -> MIDI note 69
+    const noteNum = 12 * (Math.log(freq / 440) / Math.log(2)) + 69;
+    const roundedNoteNum = Math.round(noteNum);
+    const octave = Math.floor(roundedNoteNum / 12) - 1;
+    const noteName = NOTE_STRINGS[roundedNoteNum % 12];
+    
+    // Calculate cents off
+    const expectedFreq = 440 * Math.pow(2, (roundedNoteNum - 69) / 12);
+    const cents = Math.round(1200 * Math.log(freq / expectedFreq) / Math.log(2));
+    const centsStr = cents > 0 ? `+${cents}` : cents;
+
+    return `${noteName}${octave} (${centsStr}c)`;
+  }
+
+  async function startDebugMode() {
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      alert('Microphone access is required for debug mode.');
+      return;
+    }
+
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioCtx.createMediaStreamSource(mediaStream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 4096; // Higher resolution for debug
+    source.connect(analyser);
+
+    recordingActive = true;
+    showScreen('debug'); // We will add a debug screen in HTML later or handle UI differently
+    
+    // We'll track the last valid reading to hold it briefly, making the UI less erratic
+    let lastValidFreq = 0;
+    let holdTimeout = null;
+
+    debugTimer = setInterval(() => {
+      if (!recordingActive) return;
+      
+      const bufLen = analyser.frequencyBinCount;
+      const data = new Uint8Array(bufLen);
+      analyser.getByteFrequencyData(data);
+
+      let maxVal = 0;
+      let maxIdx = 0;
+      for (let i = 4; i < bufLen; i++) {
+        if (data[i] > maxVal) {
+          maxVal = data[i];
+          maxIdx = i;
+        }
+      }
+
+      // Slightly stricter threshold for debug mode so background noise doesn't register
+      const nyquist = audioCtx.sampleRate / 2;
+      const freq = (maxVal > 30) ? (maxIdx / bufLen) * nyquist : 0;
+
+      if (freq > 0) {
+        lastValidFreq = freq;
+        if (holdTimeout) clearTimeout(holdTimeout);
+        holdTimeout = setTimeout(() => { lastValidFreq = 0; }, 2000); // Hold reading for 2s
+      }
+
+      const displayFreq = (freq > 0) ? freq : lastValidFreq;
+      const note = getNoteFromFreq(displayFreq);
+      
+      els.debugFreq.textContent = displayFreq > 0 ? `${Math.round(displayFreq)} Hz` : '-- Hz';
+      els.debugNote.textContent = note;
+      
+    }, 50);
+  }
+
+  function stopDebugMode() {
+    recordingActive = false;
+    if (debugTimer) clearInterval(debugTimer);
+    debugTimer = null;
+    if (mediaStream) {
+      mediaStream.getTracks().forEach((t) => t.stop());
+      mediaStream = null;
+    }
+    if (audioCtx) {
+      audioCtx.close().catch(() => { });
+      audioCtx = null;
+    }
+  }
+
   function stopRecording() {
     recordingActive = false;
     if (recordingTimer) clearInterval(recordingTimer);
@@ -200,7 +319,7 @@
       mediaStream = null;
     }
     if (audioCtx) {
-      audioCtx.close().catch(() => {});
+      audioCtx.close().catch(() => { });
       audioCtx = null;
     }
     // Reset progress
@@ -319,8 +438,8 @@
               <rect x="20" y="24" width="80" height="140"
                     class="tank-fill" style="transform: translateY(${fillOffset}%)"/>
             </g>
-            <rect x="38" y="158" width="8" height="16" rx="3" fill="currentColor"/>
-            <rect x="74" y="158" width="8" height="16" rx="3" fill="currentColor"/>
+            <rect x="38" y="161" width="8" height="8" rx="3" fill="currentColor"/>
+            <rect x="74" y="161" width="8" height="8" rx="3" fill="currentColor"/>
           </svg>
         </div>
         <div class="history-top">
@@ -369,7 +488,7 @@
       els.confirmMessage.textContent = message;
       els.confirmOverlay.classList.remove('hidden');
       const yes = () => { cleanup(); resolve(true); };
-      const no  = () => { cleanup(); resolve(false); };
+      const no = () => { cleanup(); resolve(false); };
       const cleanup = () => {
         els.confirmOverlay.classList.add('hidden');
         els.confirmYes.removeEventListener('click', yes);
@@ -413,6 +532,13 @@
     // Recording
     els.btnCancelRecording.addEventListener('click', () => {
       stopRecording();
+      showScreen('home');
+    });
+
+    // Debug Mode
+    if(els.btnDebugMode) els.btnDebugMode.addEventListener('click', () => startDebugMode());
+    if(els.btnStopDebug) els.btnStopDebug.addEventListener('click', () => {
+      stopDebugMode();
       showScreen('home');
     });
 
